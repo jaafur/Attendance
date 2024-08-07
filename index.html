@@ -25,6 +25,13 @@
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
 
+    // Function to convert UTC time to UAE time
+    function getUAETime(utcDate) {
+      const uaetOffset = 4 * 60; // UAE is UTC+4 hours
+      const localTime = new Date(utcDate.getTime() + (uaetOffset * 60000));
+      return localTime.toLocaleString('en-US', { timeZone: 'Asia/Dubai' });
+    }
+
     // Function to mark attendance
     window.markAttendance = function() {
       const userId = document.getElementById('userId').value;
@@ -50,7 +57,9 @@
         attendanceList.innerHTML = '';
         for (let userId in data) {
           let entry = document.createElement('li');
-          entry.textContent = `User: ${userId}, Status: ${data[userId].status}, Time: ${data[userId].timestamp}`;
+          const timestampUTC = new Date(data[userId].timestamp);
+          const timestampUAE = getUAETime(timestampUTC);
+          entry.textContent = `User: ${userId}, Status: ${data[userId].status}, Time (UAE): ${timestampUAE}`;
           attendanceList.appendChild(entry);
         }
       });
