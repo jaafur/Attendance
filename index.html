@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Attendance App</title>
+  <script type="module">
+    // Import the functions you need from the Firebase SDK
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+    import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-database.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyA56aC0sJjzYSqbnKXRApWpzVcN7TSTRDI",
+      authDomain: "attendance-558fa.firebaseapp.com",
+      databaseURL: "https://attendance-558fa-default-rtdb.firebaseio.com",
+      projectId: "attendance-558fa",
+      storageBucket: "attendance-558fa.appspot.com",
+      messagingSenderId: "920866156722",
+      appId: "1:920866156722:web:700f53233ccd6a99ed59ab",
+      measurementId: "G-LKKG0Q036L"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+
+    // Function to mark attendance
+    window.markAttendance = function() {
+      const userId = document.getElementById('userId').value;
+      const status = document.getElementById('status').value;
+      if (userId && status) {
+        const attendanceRef = ref(database, 'attendance/' + userId);
+        set(attendanceRef, {
+          status: status,
+          timestamp: new Date().toISOString()
+        });
+        alert('Attendance marked successfully!');
+      } else {
+        alert('Please enter both User ID and Status.');
+      }
+    };
+
+    // Function to display real-time attendance data
+    window.displayAttendance = function() {
+      const attendanceRef = ref(database, 'attendance');
+      onValue(attendanceRef, (snapshot) => {
+        const data = snapshot.val();
+        const attendanceList = document.getElementById('attendanceList');
+        attendanceList.innerHTML = '';
+        for (let userId in data) {
+          let entry = document.createElement('li');
+          entry.textContent = `User: ${userId}, Status: ${data[userId].status}, Time: ${data[userId].timestamp}`;
+          attendanceList.appendChild(entry);
+        }
+      });
+    };
+
+    // Call displayAttendance when the page loads
+    window.onload = displayAttendance;
+  </script>
+</head>
+<body>
+  <h1>Attendance App</h1>
+  <div>
+    <label for="userId">User ID:</label>
+    <input type="text" id="userId">
+    <label for="status">Status:</label>
+    <select id="status">
+      <option value="present">Present</option>
+      <option value="absent">Absent</option>
+    </select>
+    <button onclick="markAttendance()">Mark Attendance</button>
+  </div>
+  <h2>Real-time Attendance Data</h2>
+  <ul id="attendanceList"></ul>
+</body>
+</html>
