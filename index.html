@@ -108,6 +108,8 @@
           uaeDate: getUAEDateTime() // Store the UAE date of ticket creation
         }).then(() => {
           alert('Ticket marked successfully!');
+          document.getElementById('attendanceForm').classList.remove('disabled');
+          document.getElementById('ticketForm').classList.add('disabled');
           loadTechnicianTickets(userId); // Reload technician tickets after updating
         }).catch((error) => {
           console.error('Error marking ticket:', error);
@@ -220,99 +222,92 @@
           attendanceList.innerHTML = '';
 
           if (attendanceData && attendanceData.timestamp) {
-            const attendanceTimestampUTC = new Date(attendanceData.timestamp);
-            const attendanceDate = getUAEDateTime(); // Get UAE date for attendance
-            if (attendanceTimestampUTC >= startOfDay && attendanceTimestampUTC <= endOfDay) {
-              attendanceList.innerHTML = `
-                Attendance: ${attendanceData.status}, Date (UAE): ${attendanceDate}
-              `;
+            const timestampUTC = new Date(attendanceData.timestamp);
+            const timestampUAE = getUAETime(timestampUTC);
+
+            if (timestampUTC >= startOfDay && timestampUTC <= endOfDay) {
+              const entry = document.createElement('li');
+              entry.textContent = `User: ${userId}, Status: ${attendanceData.status}, Time (UAE): ${timestampUAE}`;
+              attendanceList.appendChild(entry);
             }
           }
+        });
 
-          onValue(ticketsRef, (snapshot) => {
-            const ticketData = snapshot.val();
-            const ticketList = document.getElementById('reportTickets');
-            ticketList.innerHTML = '';
+        onValue(ticketsRef, (snapshot) => {
+          const ticketsData = snapshot.val();
+          const ticketList = document.getElementById('reportTickets');
+          ticketList.innerHTML = '';
 
-            for (let ticketNumber in ticketData) {
-              if (ticketData[ticketNumber].technicianId === userId) {
-                const ticketDate = ticketData[ticketNumber].uaeDate; // Ticket creation date
-                if (ticketDate === reportDate) {
-                  const status = ticketData[ticketNumber].status;
-                  ticketList.innerHTML += `
-                    Ticket: ${ticketNumber}, Building: ${ticketData[ticketNumber].building}, Status: ${status}, Date (UAE): ${ticketDate}<br>
-                  `;
-                }
+          for (let ticketNumber in ticketsData) {
+            if (ticketsData[ticketNumber].technicianId === userId) {
+              const ticketTimestampUTC = new Date(ticketsData[ticketNumber].timestamp);
+              const ticketUAEDate = ticketsData[ticketNumber].uaeDate;
+
+              if (ticketTimestampUTC >= startOfDay && ticketTimestampUTC <= endOfDay) {
+                const entry = document.createElement('li');
+                entry.textContent = `Ticket: ${ticketNumber}, Building: ${ticketsData[ticketNumber].building}, Status: ${ticketsData[ticketNumber].status}, Date (UAE): ${ticketUAEDate}`;
+                ticketList.appendChild(entry);
               }
             }
-          });
+          }
         });
       } else {
         alert('Please enter all required fields.');
       }
     };
-
-    window.onload = displayAttendance;
   </script>
 </head>
 <body>
-  <h1>Attendance App</h1>
-  <div id="attendanceForm" class="section">
+  <div class="section" id="attendanceForm">
     <h2>Mark Attendance</h2>
-    <label for="userId">User ID:</label>
-    <input type="text" id="userId">
-    <label for="status">Status:</label>
+    <input type="text" id="userId" placeholder="User ID">
     <select id="status">
       <option value="present">Present</option>
       <option value="absent">Absent</option>
     </select>
     <button onclick="markAttendance()">Mark Attendance</button>
   </div>
-  
-  <div id="ticketForm" class="section disabled">
+
+  <div class="section disabled" id="ticketForm">
     <h2>Mark Ticket</h2>
-    <label for="ticketNumber">Ticket Number:</label>
-    <input type="text" id="ticketNumber">
-    <label for="building">Building:</label>
+    <input type="text" id="ticketNumber" placeholder="Ticket Number">
     <select id="building">
-      <option value="AJ 01">AJ 01</option>
-      <option value="AJ 02">AJ 02</option>
-      <option value="AJ 03">AJ 03</option>
-      <option value="REH 01">REH 01</option>
-      <option value="REH 02">REH 02</option>
-      <option value="REH 03">REH 03</option>
-      <option value="REH 04">REH 04</option>
-      <option value="REH 05">REH 05</option>
+      <option value="AJ01">AJ01</option>
+      <option value="AJ02">AJ02</option>
+      <option value="AJ05">AJ05</option>
+      <option value="REH01">REH01</option>
+      <option value="REH02">REH02</option>
+      <option value="REH03">REH03</option>
+      <option value="REH04">REH04</option>
+      <option value="REH05">REH05</option>
     </select>
-    <label for="ticketStatus">Status:</label>
     <select id="ticketStatus">
       <option value="pending">Pending</option>
       <option value="closed">Closed</option>
     </select>
     <button onclick="markTicket()">Mark Ticket</button>
   </div>
-  
-  <div id="technicianTickets" class="section">
-    <h2>My Tickets</h2>
-    <!-- Technician tickets will be loaded here -->
+
+  <div class="section">
+    <h2>Your Tickets</h2>
+    <div id="technicianTickets"></div>
   </div>
-  
-  <div id="reportSection" class="section">
+
+  <div class="section">
+    <h2>Attendance Records</h2>
+    <button onclick="displayAttendance()">Display Attendance</button>
+    <ul id="attendanceList"></ul>
+  </div>
+
+  <div class="section">
     <h2>Generate Report</h2>
-    <label for="reportUserId">User ID:</label>
-    <input type="text" id="reportUserId">
-    <label for="reportDate">Date (YYYY-MM-DD):</label>
+    <input type="text" id="reportUserId" placeholder="User ID">
     <input type="date" id="reportDate">
     <button onclick="generateReport()">Generate Report</button>
-    <div id="reportAttendance">
-      <!-- Report attendance data will be displayed here -->
-    </div>
-    <div id="reportTickets">
-      <!-- Report ticket data will be displayed here -->
-    </div>
+    <h3>Attendance</h3>
+    <ul id="reportAttendance"></ul>
+    <h3>Tickets</h3>
+    <ul id="reportTickets"></ul>
   </div>
-  
-  <h2>Real-time Attendance Data</h2>
-  <ul id="attendanceList"></ul>
 </body>
 </html>
