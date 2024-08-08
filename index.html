@@ -72,6 +72,10 @@
           const data = snapshot.val();
           if (data && data.status) {
             alert('Attendance already marked.');
+            // If attendance was marked before, show tickets section
+            document.getElementById('attendanceForm').classList.add('disabled');
+            document.getElementById('ticketForm').classList.remove('disabled');
+            loadTechnicianTickets(userId); // Load technician tickets for this user
           } else {
             set(attendanceRef, {
               status: status,
@@ -108,9 +112,16 @@
           uaeDate: getUAEDateTime() // Store the UAE date of ticket creation
         }).then(() => {
           alert('Ticket marked successfully!');
-          document.getElementById('attendanceForm').classList.remove('disabled');
-          document.getElementById('ticketForm').classList.add('disabled');
-          loadTechnicianTickets(userId); // Reload technician tickets after updating
+          // Check if there are more tickets to add
+          const hasMoreTickets = confirm('Do you want to add another ticket?');
+          if (hasMoreTickets) {
+            // Reset the form for adding another ticket
+            document.getElementById('ticketNumber').value = '';
+            document.getElementById('building').value = '';
+            document.getElementById('ticketStatus').value = 'pending';
+          } else {
+            finishTicket(); // Redirect to attendance section
+          }
         }).catch((error) => {
           console.error('Error marking ticket:', error);
           alert('Failed to mark ticket.');
@@ -119,6 +130,15 @@
         alert('Please enter all required fields.');
       }
     };
+
+    function finishTicket() {
+      // Hide ticket form and show attendance form
+      document.getElementById('ticketForm').classList.add('disabled');
+      document.getElementById('attendanceForm').classList.remove('disabled');
+      document.getElementById('ticketNumber').value = '';
+      document.getElementById('building').value = '';
+      document.getElementById('ticketStatus').value = 'pending';
+    }
 
     function loadTechnicianTickets(userId) {
       const ticketsRef = ref(database, 'tickets');
@@ -195,10 +215,12 @@
         const data = snapshot.val();
         const attendanceList = document.getElementById('attendanceList');
         attendanceList.innerHTML = '';
+
         for (let userId in data) {
-          let entry = document.createElement('li');
+          const entry = document.createElement('li');
           const timestampUTC = new Date(data[userId].timestamp); // Get UTC timestamp
           const timestampUAE = getUAETime(timestampUTC); // Convert to UAE time
+
           entry.textContent = `User: ${userId}, Status: ${data[userId].status}, Time (UAE): ${timestampUAE}`;
           attendanceList.appendChild(entry);
         }
@@ -286,6 +308,7 @@
       <option value="closed">Closed</option>
     </select>
     <button onclick="markTicket()">Mark Ticket</button>
+    <button onclick="finishTicket()">Finish</button>
   </div>
 
   <div class="section">
